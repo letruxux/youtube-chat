@@ -236,17 +236,24 @@ export async function getYouTubeLiveVideoId(handle: string): Promise<string | nu
   }
 }
 
-// Add interfaces for message and options types
-interface ChatMessage {
+export interface ChatMessage {
+  /** The text content of the chat message */
   msg: string;
+  /** The username/display name of the message author */
   author: string;
+  /** Unique identifier for the chat message */
   id: string;
 }
 
-interface ChatListenerOptions {
+export interface ChatListenerOptions {
+  /** Polling interval in milliseconds (default: 1000) */
   interval?: number;
+  /** Custom fetch options for API requests */
   fetchOptions?: RequestInit;
+  /** Enable dynamic polling intervals based on message activity (default: false) */
   dynamicPolling?: boolean;
+  /** Maximum polling interval in milliseconds when using dynamic polling (default: 5000) */
   maxInterval?: number;
+  /** Maximum number of message IDs to store in memory (default: 100) */
   maxStoredIds?: number;
 }
