@@ -1,0 +1,23 @@
+# Source
+src/
+tests/
+
+# Config files
+.gitignore
+.prettierrc
+.eslintrc
+tsconfig.json
+bun.lockb
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.log
+.DS_Store
+data.json
+
+# Development files
+examples/
+docs/

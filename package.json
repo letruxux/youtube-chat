@@ -1,0 +1,27 @@
+{
+  "name": "@letruxux/youtube-chat",
+  "version": "1.0.0",
+  "description": "Zero dependencies, lightweight package to fetch YouTube live chat messages with no API key",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "pub": "tsc && npm publish --access public"
+  },
+  "keywords": [
+    "youtube",
+    "chat",
+    "livestream",
+    "messages",
+    "no-api"
+  ],
+  "author": "letruxux",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/letruxux/youtube-chat.git"
+  }
+}
