@@ -21,7 +21,7 @@ export default function parseAction(action: any): ChatMessage {
   const thumbnails = renderer.authorPhoto.thumbnails as Thumbnail[];
   const author = renderer.authorName.simpleText;
   const id = renderer.id;
-  const badges = renderer.authorBadges.map((badge: any) => ({
+  const badges = (renderer.authorBadges ?? []).map((badge: any) => ({
     label: badge.liveChatAuthorBadgeRenderer.accessibility.accessibilityData.label,
     text: badge.liveChatAuthorBadgeRenderer.icon.iconType,
   })) as Badge[];
@@ -43,6 +43,16 @@ export default function parseAction(action: any): ChatMessage {
     };
   }) as TextPart[];
 
+  console.log({
+    text: msg,
+    author,
+    id,
+    authorThumbnails: thumbnails,
+    badges,
+    authorId,
+    timestamp,
+    textParts,
+  });
   return {
     text: msg,
     author,

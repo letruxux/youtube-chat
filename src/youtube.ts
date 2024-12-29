@@ -62,7 +62,8 @@ export async function fetchChatMessages(
       .map((action: any): ChatMessage | null => {
         try {
           return parseAction(action);
-        } catch {
+        } catch (e) {
+          // console.error(e);
           return null;
         }
       })
