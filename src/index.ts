@@ -5,7 +5,7 @@
  */
 function validateMessage(message: ChatMessage): boolean {
   if (!message) return false;
-  if (typeof message.msg !== "string" || message.msg.length === 0) return false;
+  if (typeof message.text !== "string" || message.text.length === 0) return false;
   if (typeof message.author !== "string" || message.author.length === 0) return false;
   if (typeof message.id !== "string" || message.id.length === 0) return false;
   return true;
@@ -85,15 +85,31 @@ export async function fetchChatMessages(
           })) as Badge[];
           const authorId = renderer.authorExternalChannelId;
           const timestamp = new Date(parseInt(renderer.timestampUsec) / 1000);
+          const textParts = renderer.message.runs.map((run: any) => {
+            if (run.text) {
+              return run;
+            }
+
+            const thumbnail = run.emoji.image.thumbnails.shift();
+            const isCustomEmoji = Boolean(run.emoji.isCustomEmoji);
+            const shortcut = run.emoji.shortcuts ? run.emoji.shortcuts[0] : "";
+            return {
+              url: thumbnail ? thumbnail.url : "",
+              alt: shortcut,
+              isCustomEmoji: isCustomEmoji,
+              emojiText: isCustomEmoji ? shortcut : run.emoji.emojiId,
+            };
+          }) as TextPart[];
 
           return {
-            msg,
+            text: msg,
             author,
             id,
             authorThumbnails: thumbnails,
             badges,
             authorId,
             timestamp,
+            textParts,
           };
         } catch {
           return null;
@@ -251,7 +267,7 @@ export async function getYouTubeLiveVideoId(handle: string): Promise<string | nu
 
 export interface ChatMessage {
   /** The text content of the chat message */
-  msg: string;
+  text: string;
   /** The username/display name of the message author */
   author: string;
   /** Avatar thumbnails for the message author */
@@ -264,6 +280,8 @@ export interface ChatMessage {
   badges: Badge[];
   /** Date of when the message was sent */
   timestamp: Date;
+  /** All parts of text (emojis and text are separated)  */
+  textParts: TextPart[];
 }
 
 export interface ChatListenerOptions {
@@ -300,3 +318,14 @@ interface Badge {
   /** Thumbnail image data for the badge */
   value: Thumbnail;
 }
+
+type TextPart =
+  | {
+      text: string;
+    }
+  | {
+      url: string;
+      alt: string;
+      isCustomEmoji: boolean;
+      emojiText: string;
+    };
