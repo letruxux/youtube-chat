@@ -83,8 +83,18 @@ export async function fetchChatMessages(
               badge.liveChatAuthorBadgeRenderer.accessibility.accessibilityData.label,
             text: badge.liveChatAuthorBadgeRenderer.icon.iconType,
           })) as Badge[];
+          const authorId = renderer.authorExternalChannelId;
+          const timestamp = new Date(parseInt(renderer.timestampUsec) / 1000);
 
-          return { msg, author, id, thumbnails, badges };
+          return {
+            msg,
+            author,
+            id,
+            authorThumbnails: thumbnails,
+            badges,
+            authorId,
+            timestamp,
+          };
         } catch {
           return null;
         }
@@ -244,12 +254,16 @@ export interface ChatMessage {
   msg: string;
   /** The username/display name of the message author */
   author: string;
+  /** Avatar thumbnails for the message author */
+  authorThumbnails: Thumbnail[];
+  /** Unique identifier for the author's channel */
+  authorId: string;
   /** Unique identifier for the chat message */
   id: string;
-  /** Avatar thumbnails for the message author */
-  thumbnails: Thumbnail[];
   /** User badges (verified, owner, etc.) */
   badges: Badge[];
+  /** Date of when the message was sent */
+  timestamp: Date;
 }
 
 export interface ChatListenerOptions {
