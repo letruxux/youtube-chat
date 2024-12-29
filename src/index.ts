@@ -1,11 +1,9 @@
-import { writeFileSync } from "fs";
-
 /**
  * Validates if a message object has all required properties with correct types
  * @param message - The message object to validate
  * @returns Whether the message is valid
  */
-function validateMessage(message: { msg: string; author: string; id: string }): boolean {
+function validateMessage(message: ChatMessage): boolean {
   if (!message) return false;
   if (typeof message.msg !== "string" || message.msg.length === 0) return false;
   if (typeof message.author !== "string" || message.author.length === 0) return false;
@@ -57,9 +55,8 @@ export async function fetchChatMessages(
     const data = JSON.parse(fixed);
 
     const actions = data.contents.liveChatRenderer.actions;
-    writeFileSync("data.json", JSON.stringify(data, null, 2));
     const messages = actions
-      .map((action: any) => {
+      .map((action: any): ChatMessage | null => {
         try {
           const renderer = action.addChatItemAction.item.liveChatTextMessageRenderer;
 
@@ -78,10 +75,16 @@ export async function fetchChatMessages(
               return "";
             })
             .join(" ");
+          const thumbnails = renderer.authorPhoto.thumbnails as Thumbnail[];
           const author = renderer.authorName.simpleText;
           const id = renderer.id;
+          const badges = renderer.authorBadges.map((badge: any) => ({
+            label:
+              badge.liveChatAuthorBadgeRenderer.accessibility.accessibilityData.label,
+            text: badge.liveChatAuthorBadgeRenderer.icon.iconType,
+          })) as Badge[];
 
-          return { msg, author, id };
+          return { msg, author, id, thumbnails, badges };
         } catch {
           return null;
         }
@@ -107,7 +110,7 @@ export class ChatListener {
   private maxStoredIds: number;
   private isListening: boolean;
   private seenMessages: Set<string>;
-  private callbacks: Set<(message: { msg: string; author: string; id: string }) => void>;
+  private callbacks: Set<(message: ChatMessage) => void>;
   private currentInterval: number;
   private timeoutId?: ReturnType<typeof setTimeout>;
 
@@ -243,6 +246,10 @@ export interface ChatMessage {
   author: string;
   /** Unique identifier for the chat message */
   id: string;
+  /** Avatar thumbnails for the message author */
+  thumbnails: Thumbnail[];
+  /** User badges (verified, owner, etc.) */
+  badges: Badge[];
 }
 
 export interface ChatListenerOptions {
@@ -256,4 +263,26 @@ export interface ChatListenerOptions {
   maxInterval?: number;
   /** Maximum number of message IDs to store in memory (default: 100) */
   maxStoredIds?: number;
+}
+
+/**
+ * Represents a thumbnail image for a user's profile or badge
+ */
+interface Thumbnail {
+  /** Width of the thumbnail in pixels */
+  width: number;
+  /** Height of the thumbnail in pixels */
+  height: number;
+  /** URL of the thumbnail image */
+  url: string;
+}
+
+/**
+ * Represents a badge displayed next to a user's name in chat
+ */
+interface Badge {
+  /** Text identifier for the badge type */
+  text: string;
+  /** Thumbnail image data for the badge */
+  value: Thumbnail;
 }
