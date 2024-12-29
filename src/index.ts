@@ -1,4 +1,4 @@
-export { ChatListener, fetchChatMessages, getYouTubeLiveVideoId } from "./youtube";
+export { fetchChatMessages, getYouTubeLiveVideoId } from "./youtube";
 export type {
   Badge,
   ChatListenerOptions,
@@ -6,3 +6,4 @@ export type {
   TextPart,
   Thumbnail,
 } from "./defs";
+export { ChatListener } from "./listener";

@@ -1,10 +1,5 @@
-import type {
-  Badge,
-  ChatListenerOptions,
-  ChatMessage,
-  TextPart,
-  Thumbnail,
-} from "./defs";
+import type { ChatMessage } from "./defs";
+import parseAction from "./parser";
 
 /**
  * Validates if a message object has all required properties with correct types
@@ -66,59 +61,7 @@ export async function fetchChatMessages(
     const messages = actions
       .map((action: any): ChatMessage | null => {
         try {
-          const renderer = action.addChatItemAction.item.liveChatTextMessageRenderer;
-
-          const msg = renderer.message.runs
-            .map((run: any) => {
-              if (run.text) {
-                return run.text.trim();
-              }
-
-              if (run.emoji) {
-                // You can choose to return either the emoji label or first shortcut
-                return run.emoji.image?.accessibility?.accessibilityData?.label
-                  ? ":" + run.emoji.image?.accessibility?.accessibilityData?.label + ":"
-                  : run.emoji.shortcuts?.[1] || run.emoji.shortcuts?.[0] || "";
-              }
-              return "";
-            })
-            .join(" ");
-          const thumbnails = renderer.authorPhoto.thumbnails as Thumbnail[];
-          const author = renderer.authorName.simpleText;
-          const id = renderer.id;
-          const badges = renderer.authorBadges.map((badge: any) => ({
-            label:
-              badge.liveChatAuthorBadgeRenderer.accessibility.accessibilityData.label,
-            text: badge.liveChatAuthorBadgeRenderer.icon.iconType,
-          })) as Badge[];
-          const authorId = renderer.authorExternalChannelId;
-          const timestamp = new Date(parseInt(renderer.timestampUsec) / 1000);
-          const textParts = renderer.message.runs.map((run: any) => {
-            if (run.text) {
-              return run;
-            }
-
-            const thumbnail = run.emoji.image.thumbnails.shift();
-            const isCustomEmoji = Boolean(run.emoji.isCustomEmoji);
-            const shortcut = run.emoji.shortcuts ? run.emoji.shortcuts[0] : "";
-            return {
-              url: thumbnail ? thumbnail.url : "",
-              alt: shortcut,
-              isCustomEmoji: isCustomEmoji,
-              emojiText: isCustomEmoji ? shortcut : run.emoji.emojiId,
-            };
-          }) as TextPart[];
-
-          return {
-            text: msg,
-            author,
-            id,
-            authorThumbnails: thumbnails,
-            badges,
-            authorId,
-            timestamp,
-            textParts,
-          };
+          return parseAction(action);
         } catch {
           return null;
         }
@@ -129,113 +72,6 @@ export async function fetchChatMessages(
   } catch (e) {
     console.error(e);
     throw new Error(`Failed to parse chat messages for video ${videoId}`);
-  }
-}
-
-/**
- * Class to handle real-time YouTube chat message listening
- */
-export class ChatListener {
-  private videoId: string;
-  private interval: number;
-  private fetchOptions: RequestInit;
-  private dynamicPolling: boolean;
-  private maxInterval: number;
-  private maxStoredIds: number;
-  private isListening: boolean;
-  private seenMessages: Set<string>;
-  private callbacks: Set<(message: ChatMessage) => void>;
-  private currentInterval: number;
-  private timeoutId?: ReturnType<typeof setTimeout>;
-
-  /**
-   * Creates a new ChatListener instance
-   * @param videoId - The YouTube video ID to listen to
-   * @param options - Configuration options
-   */
-  constructor(videoId: string, options: ChatListenerOptions = {}) {
-    this.videoId = videoId;
-    this.interval = options.interval || 1000;
-    this.fetchOptions = options.fetchOptions || {};
-    this.dynamicPolling = options.dynamicPolling || false;
-    this.maxInterval = options.maxInterval || 5000;
-    this.maxStoredIds = options.maxStoredIds || 100;
-    this.isListening = false;
-    this.seenMessages = new Set<string>();
-    this.callbacks = new Set();
-    this.currentInterval = this.interval;
-  }
-
-  /**
-   * Adds a callback function to handle new messages
-   * @param callback - Function to call with new messages
-   */
-  onMessage(callback: (message: ChatMessage) => void): void {
-    this.callbacks.add(callback);
-  }
-
-  /**
-   * Starts listening for chat messages
-   */
-  start(): void {
-    if (this.isListening) return;
-    this.isListening = true;
-    this._poll();
-  }
-
-  /**
-   * Stops listening for chat messages
-   */
-  stop(): void {
-    this.isListening = false;
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-    }
-  }
-
-  /**
-   * Toggles dynamic polling on/off
-   * @param enabled - Whether to enable dynamic polling
-   */
-  setDynamicPolling(enabled: boolean): void {
-    this.dynamicPolling = enabled;
-    this.currentInterval = this.interval;
-  }
-
-  /**
-   * Internal polling method
-   * @private
-   */
-  private async _poll(): Promise<void> {
-    if (!this.isListening) return;
-
-    try {
-      const messages = await fetchChatMessages(this.videoId, this.fetchOptions);
-      const newMessages = messages.filter((msg) => !this.seenMessages.has(msg.id));
-
-      newMessages.forEach((msg) => {
-        if (this.seenMessages.size > this.maxStoredIds) {
-          const iterator = this.seenMessages.values();
-          const next = iterator.next();
-          if (next.value) this.seenMessages.delete(next.value);
-        }
-        this.seenMessages.add(msg.id);
-        this.callbacks.forEach((callback) => callback(msg));
-      });
-
-      if (this.dynamicPolling) {
-        this.currentInterval =
-          newMessages.length > 0
-            ? this.interval
-            : Math.min(this.currentInterval * 1.5, this.maxInterval);
-      } else {
-        this.currentInterval = this.interval;
-      }
-    } catch (error) {
-      console.error("Error fetching chat messages:", error);
-    }
-
-    this.timeoutId = setTimeout(() => this._poll(), this.currentInterval);
   }
 }
 
