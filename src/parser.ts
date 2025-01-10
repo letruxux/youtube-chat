@@ -43,16 +43,6 @@ export default function parseAction(action: any): ChatMessage {
     };
   }) as TextPart[];
 
-  console.log({
-    text: msg,
-    author,
-    id,
-    authorThumbnails: thumbnails,
-    badges,
-    authorId,
-    timestamp,
-    textParts,
-  });
   return {
     text: msg,
     author,
